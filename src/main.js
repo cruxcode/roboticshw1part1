@@ -90,12 +90,12 @@ function segCircleIntersect(c, s) {
  * @param {Point} p
  * @return {boolean} 
  */
-function pointOnSeg(s, p){
+function pointOnSeg(s, p) {
     let smallx = s.x1 <= s.x2 ? s.x1 : s.x2;
     let bigx = s.x1 >= s.x2 ? s.x1 : s.x2;
     let smally = s.y1 <= s.y2 ? s.y1 : s.y2;
     let bigy = s.y1 >= s.y2 ? s.y1 : s.y2;
-    if(smallx <= p.x && bigx >= p.x && smally <= p.y && bigy >= p.y){
+    if (smallx <= p.x && bigx >= p.x && smally <= p.y && bigy >= p.y) {
         return true;
     } else {
         return false;
@@ -117,11 +117,11 @@ function lineCircleIntersect(c, l) {
     if (det < 0) {
         return;
     }
-    let rootx = (-1 * bcap + det**0.5) / (2 * acap);
+    let rootx = (-1 * bcap + det ** 0.5) / (2 * acap);
     let rooty = l.m * rootx + l.c;
     let res = [];
     res.push(new Point(rootx, rooty));
-    rootx = (-1 * bcap - det**0.5) / (2 * acap);
+    rootx = (-1 * bcap - det ** 0.5) / (2 * acap);
     rooty = l.m * rootx + l.c;
     res.push(new Point(rootx, rooty));
     return res;
@@ -146,12 +146,12 @@ function circleCircleIntersect(c1, c2) {
  * @param {Segment} s2
  * @returns {Point}
  */
-function segSegIntersects(s1, s2){
+function segSegIntersects(s1, s2) {
     let l1 = convSegToLine(s1);
     let l2 = convSegToLine(s2);
     let inter = lineLineIntersects(l1, l2);
-    if(inter){
-        if(pointOnSeg(s1, inter) && pointOnSeg(s2, inter)){
+    if (inter) {
+        if (pointOnSeg(s1, inter) && pointOnSeg(s2, inter)) {
             return inter;
         }
     }
@@ -163,12 +163,12 @@ function segSegIntersects(s1, s2){
  * @param {Line} l2
  * @returns {Point} 
  */
-function lineLineIntersects(l1, l2){
-    if(l1.m - l2.m == 0){
+function lineLineIntersects(l1, l2) {
+    if (l1.m - l2.m == 0) {
         return;
     }
     let x = (l2.c - l1.c) / (l1.m - l2.m);
-    let y = l1.m*x + l1.c;
+    let y = l1.m * x + l1.c;
     return new Point(x, y);
 }
 /**
@@ -227,8 +227,8 @@ class ManRoboConfig {
 function getRO(robo, o) {
     let res = [];
     for (let q1 = 0; q1 < 360; ++q1) {
-        let a = Math.cos(q1)*robo.link1len + robo.base.x;
-        let b = Math.sign(q1)*robo.link1len + robo.base.y;
+        let a = Math.cos(q1*Math.PI/180) * robo.link1len + robo.base.x;
+        let b = Math.sin(q1*Math.PI/180) * robo.link1len + robo.base.y;
         let r = robo.link2len;
         let circle = new Circle(a, b, r);
         let q2 = {};
@@ -242,13 +242,13 @@ function getRO(robo, o) {
             }
             if (o.parts[i] instanceof Segment) {
                 let intersects = segCircleIntersect(circle, o.parts[i]);
-                if(intersects){
-                    for(let q2cap = 0; q2cap < 360; q2cap++){
-                        let x2 = Math.cos(q1 + q2cap)*robo.link2len + a;
-                        let y2 = Math.sin(q1 + q2cap)*robo.link2len + b;
+                if (intersects) {
+                    for (let q2cap = 0; q2cap < 360; q2cap++) {
+                        let x2 = Math.cos((q1 + q2cap)*Math.PI/180) * robo.link2len + a;
+                        let y2 = Math.sin((q1 + q2cap)*Math.PI/180) * robo.link2len + b;
                         let s2 = new Segment(a, b, x2, y2);
                         let tmp = segSegIntersects(o.parts[i], s2);
-                        if(tmp){
+                        if (tmp) {
                             q2[q2cap] = true;
                         }
                     }
@@ -257,13 +257,128 @@ function getRO(robo, o) {
         }
         // add q1, q2 to res
         let q2s = Object.keys(q2);
-        for(let i = 0; i < q2s.length; ++i){
-            res.push(q1, q2s[i]);
+        for (let i = 0; i < q2s.length; ++i) {
+            res.push([q1, parseInt(q2s[i])]);
         }
     }
     return res;
 }
 
+function isIntersection(robo, o, q1, q2) {
+    let a = Math.cos(q1*Math.PI/180) * robo.link1len + robo.base.x;
+    let b = Math.sin(q1*Math.PI/180) * robo.link1len + robo.base.y;
+    let r = robo.link2len;
+    let circle = new Circle(a, b, r);
+    // check if circle intersects with any obstacle part
+    for (let i = 0; i < o.parts.length; ++i) {
+        if (o.parts[i] instanceof Line) {
+            let intersects = lineCircleIntersect(c, o.parts[i]);
+        }
+        if (o.parts[i] instanceof Circle) {
+            let intersects = circleCircleIntersect(c, o.parts[i]);
+        }
+        if (o.parts[i] instanceof Segment) {
+            let intersects = segCircleIntersect(circle, o.parts[i]);
+            if (intersects) {
+                let x2 = Math.cos((q1 + q2)*Math.PI/180) * robo.link2len + a;
+                let y2 = Math.sin((q1 + q2)*Math.PI/180) * robo.link2len + b;
+                let s2 = new Segment(a, b, x2, y2);
+                console.log(s2);
+                let tmp = segSegIntersects(o.parts[i], s2);
+                if (tmp) {
+                    return tmp;
+                }
+            }
+        }
+    }
+}
+
+
 let r = new ManRobo(new Point(0, 0), 2, 2);
-let o = new Obstacle([new Segment(3, 1, 5, 1)]);
-console.log(getRO(r, o));
+// let o = new Obstacle([new Segment(2, 2.5, 3, 2.5), new Segment(2, 2.5, 3, 5), new Segment(3, 2.5, 3, 5)]);
+let o = new Obstacle([new Segment(2, 2.5, 3, 2.5)]);
+let intersection = getRO(r, o);
+let data = [];
+for (let i = 0; i < intersection.length; ++i) {
+    data.push({ x: intersection[i][0], y: intersection[i][1] })
+}
+console.log(intersection);
+var ctx = document.getElementById('myChart').getContext('2d');
+var scatterChart = new Chart(ctx, {
+    type: "scatter",
+    data: {
+        datasets: [
+            {
+                label: "Triangle",
+                data: data
+            }
+        ]
+    },
+    options: {
+        maintainAspectRatio: false,
+        scales: {
+            xAxes: [{
+                ticks: {
+                    max: 360
+                }
+            }],
+            yAxes: [{
+                ticks: {
+                    max: 360
+                }
+            }]
+        }
+    }
+})
+var pgCtx = document.getElementById('playGround').getContext('2d');
+
+/**
+ * 
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {Obstacle} o 
+ */
+function drawObstacle(ctx, o) {
+    for (let i = 0; i < o.parts.length; ++i) {
+        if (o.parts[i] instanceof Line) {
+
+        }
+        if (o.parts[i] instanceof Circle) {
+
+        }
+        if (o.parts[i] instanceof Segment) {
+            ctx.beginPath();
+            ctx.moveTo(o.parts[i].x1 * 10, 360 - o.parts[i].y1 * 10);
+            ctx.lineTo(o.parts[i].x2 * 10, 360 - o.parts[i].y2 * 10);
+            ctx.stroke();
+        }
+    }
+}
+/**
+ * 
+ * @param {CanvasRenderingContext2D} ctx 
+ * @param {ManRobo} r
+ */
+function drawRobo(ctx, r) {
+    ctx.beginPath();
+    ctx.arc(r.base.x * 10, 360 - r.base.y * 10, 5, 0, 360);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(r.base.x * 10, 360 - r.base.y * 10);
+    ctx.lineTo(r.link1len * 10, 360);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(r.link1len * 10 - 2.5, 360, 5, 0, 360);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(r.base.x * 10 + r.link1len * 10, 360 - r.base.y * 10);
+    ctx.lineTo(r.base.x * 10 + r.link1len * 10 + r.link2len * 10, 360);
+    ctx.stroke();
+}
+
+drawObstacle(pgCtx, o);
+drawRobo(pgCtx, r);
+
+console.log(isIntersection(r, o, 1, 6));
