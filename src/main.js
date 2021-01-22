@@ -235,10 +235,21 @@ function getRO(robo, o) {
         // check if circle intersects with any obstacle part
         for (let i = 0; i < o.parts.length; ++i) {
             if (o.parts[i] instanceof Line) {
-                let intersects = lineCircleIntersect(c, o.parts[i]);
+                let intersects = lineCircleIntersect(circle, o.parts[i]);
             }
             if (o.parts[i] instanceof Circle) {
-                let intersects = circleCircleIntersect(c, o.parts[i]);
+                let intersects = circleCircleIntersect(circle, o.parts[i]);
+                if(intersects){
+                    for (let q2cap = 0; q2cap < 360; q2cap++) {
+                        let x2 = Math.cos((q1 + q2cap)*Math.PI/180) * robo.link2len + a;
+                        let y2 = Math.sin((q1 + q2cap)*Math.PI/180) * robo.link2len + b;
+                        let s2 = new Segment(a, b, x2, y2);
+                        let tmp = segCircleIntersect(o.parts[i], s2);
+                        if (tmp) {
+                            q2[q2cap] = true;
+                        }
+                    }
+                }
             }
             if (o.parts[i] instanceof Segment) {
                 let intersects = segCircleIntersect(circle, o.parts[i]);
@@ -272,10 +283,10 @@ function isIntersection(robo, o, q1, q2) {
     // check if circle intersects with any obstacle part
     for (let i = 0; i < o.parts.length; ++i) {
         if (o.parts[i] instanceof Line) {
-            let intersects = lineCircleIntersect(c, o.parts[i]);
+            let intersects = lineCircleIntersect(circle, o.parts[i]);
         }
         if (o.parts[i] instanceof Circle) {
-            let intersects = circleCircleIntersect(c, o.parts[i]);
+            let intersects = circleCircleIntersect(circle, o.parts[i]);
         }
         if (o.parts[i] instanceof Segment) {
             let intersects = segCircleIntersect(circle, o.parts[i]);
@@ -295,14 +306,27 @@ function isIntersection(robo, o, q1, q2) {
 
 
 let r = new ManRobo(new Point(0, 0), 2, 2);
-// let o = new Obstacle([new Segment(2, 2.5, 3, 2.5), new Segment(2, 2.5, 3, 5), new Segment(3, 2.5, 3, 5)]);
-let o = new Obstacle([new Segment(2, 2.5, 3, 2.5)]);
-let intersection = getRO(r, o);
-let data = [];
-for (let i = 0; i < intersection.length; ++i) {
-    data.push({ x: intersection[i][0], y: intersection[i][1] })
+// traingle
+let o = new Obstacle([new Segment(2, 2.5, 3, 2.5), new Segment(2, 2.5, 3, 5), new Segment(3, 2.5, 3, 5)]);
+let triangle = getRO(r, o);
+// lower rectangle
+o = new Obstacle([new Segment(-0.5, -1.5, 1.5, -1.5), new Segment(-0.5, -1.5, -0.5, -2), new Segment(1.5, -1.5, 1.5, -2)]);
+let rect = getRO(r, o);
+// upper circle
+o = new Obstacle([new Circle(-1.5, 1, 0.5)]);
+let upper = getRO(r, o);
+// lower circle
+o = new Obstacle([new Circle(-1.5, -1, 0.5)]);
+let lower = getRO(r, o);
+
+function datafy(intersection){
+    let data = [];
+    for (let i = 0; i < intersection.length; ++i) {
+        data.push({ x: intersection[i][0], y: intersection[i][1] })
+    }
+    return data;
 }
-console.log(intersection);
+
 var ctx = document.getElementById('myChart').getContext('2d');
 var scatterChart = new Chart(ctx, {
     type: "scatter",
@@ -310,7 +334,20 @@ var scatterChart = new Chart(ctx, {
         datasets: [
             {
                 label: "Triangle",
-                data: data
+                data: datafy(triangle),
+                fill: "rgba(255, 0, 0, 1)"
+            },
+            {
+                label: "Rectangle",
+                data: datafy(rect)
+            },
+            {
+                label: "Upper Circle",
+                data: datafy(upper)
+            },
+            {
+                label: "Lower Circle",
+                data: datafy(lower)
             }
         ]
     },
